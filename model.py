@@ -320,7 +320,7 @@ JOIN users ON artikel.penulis = users.id"""
             query = "INSERT INTO users (name, email, password, alamat, created_at, updated_at, is_admin) VALUES (%s, %s, %s, %s, %s, %s, %s)"
             cursor.execute(query, (name, email, password,alamat, created_at, updated_at, is_admin))
             self.mydb.commit()
-            st.info('Data Successfully Added') 
+            st.info('Data Successfully Added, log in again to see the changes.') 
         except Exception as e:
             st.error(f'Error: {e}')
     
