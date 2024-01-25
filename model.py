@@ -37,7 +37,7 @@ class AppModel:
                 password=db_secrets["password"],
                 host=db_secrets["host"],
                 port=3306,
-                database='quakevigilantdb',
+                database='test',
                 client_flags = [mysql.connector.ClientFlag.SSL],
                 ssl_ca = get_ssl_cert(),
                 ssl_disabled=False                
