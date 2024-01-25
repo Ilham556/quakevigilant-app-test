@@ -1,0 +1,15 @@
+altair==5.2.0
+folium==0.14.0
+geopandas==0.13.2
+hydralit_components==1.0.10
+mysql-connector-python==8.1.0
+pypyodbc==1.3.6
+numpy==1.24.3
+pandas==1.5.3
+Requests==2.31.0
+streamlit==1.28.2
+streamlit-aggrid==0.3.4.post3
+streamlit_folium==0.15.1
+streamlit_option_menu==0.3.6
+
+mysqlclient==2.2.1
