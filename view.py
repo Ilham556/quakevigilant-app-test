@@ -1232,7 +1232,7 @@ class AppView:
             submitted = st.form_submit_button('Submit',disabled=editmode)
             if submitted:
                 st.session_state.update = self.controller.update_myuser(self.name_user,self.email_user,self.password_user,self.address_user,self.update_at_input_user,user_info['id'])
-
+                st.experimental_rerun()
         if login_status == 'berhasil':
             if st.button('Logout'):
                   # Check if the Logout button is clicked
