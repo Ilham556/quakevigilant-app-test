@@ -158,3 +158,17 @@ class AppController:
     def get_city(self):
         return self.model.get_city()
     
+    
+
+    
+    
+    
+
+    
+
+    
+    
+        
+
+
+
