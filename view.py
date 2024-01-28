@@ -1344,6 +1344,7 @@ class AppView:
                         self.name_user_register, self.email_user_register,self.password_user_register,
                         self.address_user_register, self.created_at_user_register, self.update_at_user_register, self.is_admin_user_register
                     )
+                    st.write('Register')
                     Confrimation()
                     st.experimental_rerun()
                     
@@ -1365,7 +1366,13 @@ class AppView:
                     st.experimental_rerun()
         
         st.markdown("---")
-            
+                
+
+
+
+
+
+    
     def loginview(self):
         self.title('Login')
         self.login_email = ""
