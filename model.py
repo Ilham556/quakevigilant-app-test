@@ -53,17 +53,17 @@ JOIN users ON artikel.penulis = users.id;"""
             "endtime":end_of_week.isoformat(),
             "minmagnitude": 2.5
         }
-
+    
         # Melakukan permintaan GET ke API
         response = requests.get(url, params=params)
-
+    
         # Mengecek status permintaan
         if response.status_code == 200:
             # Mengubah data yang diterima menjadi JSON
             self.earthquake_data = response.json()
             return self.earthquake_data
         
-
+    
         else:
             print(f"Request failed with status code {response.status_code}")
     
@@ -82,7 +82,7 @@ JOIN users ON artikel.penulis = users.id;"""
         df['time_date'] = df['time'].dt.date
         df = df[df['state'].str.strip().isin(['Indonesia'])]
         return df
-
+    
     def processing_df_heatmap(self,df):
         df.drop(df[(df['magnitudo'] == 0) | (df['significance'] == 0) | (df['depth'] == 0)].index, inplace=True)
         df['date'] = pd.to_datetime(df['date'])
@@ -107,7 +107,7 @@ JOIN users ON artikel.penulis = users.id;"""
                 varBantu = 'Night'
             listBantu.append(varBantu)
         df['dayperiod'] = listBantu
-
+    
         df['categorical earthquake'] = df['magnitudo'].apply(lambda x: 'micro' if x < 3 else 'minor' if x < 4 else 'light' if x < 5
                                                     else 'moderate' if x < 6 else 'strong' if x < 7 else 'major' if x < 8 
                                                      else 'very strong')
@@ -115,20 +115,20 @@ JOIN users ON artikel.penulis = users.id;"""
         df['season'] = df['month'].apply(lambda x:'dry season' if (x>3)&(x<11) else 'rainy season')
         df['depth category'] = df['depth'].apply(lambda x:'shallow' if x < 60 else 'intermediate' if x < 300 else 'deep')
         
-
+    
         return df
     
     def show_artikel(self):
         try:
             cursor = self.mydb.cursor()
             query = """SELECT artikel.id, artikel.link_gambar, artikel.judul, artikel.konten, artikel.link_vidio, artikel.tanggal_publikasi, users.name AS penulis
-FROM artikel 
-JOIN users ON artikel.penulis = users.id"""
+    FROM artikel 
+    JOIN users ON artikel.penulis = users.id"""
             cursor.execute(query)
             results = cursor.fetchall()
-
+    
             articles = []
-
+    
             for result in results:
                 article = {
                     'id': result[0],
@@ -142,11 +142,11 @@ JOIN users ON artikel.penulis = users.id"""
                     }
                     # Add more fields as needed
                 }
-
+    
                 articles.append(article)
-
+    
             return articles
-
+    
         except Exception as e:
             st.error(f'Error: {e}')
     
@@ -158,7 +158,7 @@ JOIN users ON artikel.penulis = users.id"""
             self.mydb.commit()
             result = cursor.fetchone()
             
-
+    
             if result:
                 
                 # If login is successful, return the user information
@@ -173,7 +173,7 @@ JOIN users ON artikel.penulis = users.id"""
                 }
                 return 'berhasil', user_info
             else:
-
+    
                 return "gagal", {}
         except Exception as e:
             st.error(f'Error: {e}')
@@ -191,7 +191,7 @@ JOIN users ON artikel.penulis = users.id"""
         except Exception as e:
             st.error(f'Error: {e}')
         return self.df_user
-
+    
     def register_myuser(self, name, email, password, alamat, created_at, updated_at, is_admin):
         try:
             # Tambahkan data baru ke database
@@ -216,7 +216,7 @@ JOIN users ON artikel.penulis = users.id"""
             st.info('Data Successfully Added') 
         except Exception as e:
             st.error(f'Error: {e}')
-
+    
         return self.df_heatmap
     
     def updatedata_heatmap(self, country, Reference_Point, state, status, tsunami, magnitudo, significance, data_type, longitude, latitude, depth, date, ids):
