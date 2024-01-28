@@ -64,7 +64,13 @@ class AppController:
         self.view.show_map(self.df)
     
     def table_heatmap(self):
-        self.view.table(self.df_heatmap)
+        self.view.table_admin(self.df_heatmap,'tidak')
+    
+    def table_admin(self,df,status):
+        return self.view.table_admin(df,status)
+
+    
+
     
     def map_heatmap(self):
         self.view.show_heatmap(self.df_heatmap)
@@ -152,17 +158,3 @@ class AppController:
     def get_city(self):
         return self.model.get_city()
     
-    
-
-    
-    
-    
-
-    
-
-    
-    
-        
-
-
-
