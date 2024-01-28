@@ -1357,8 +1357,8 @@ class AppView:
         elif st.session_state["stage"] == "confirmation":
             st.balloons()
             with st.form("confirmation_params_form"):
-                st.header('Selamat Akun Anda Telah Dibuat')
-                submitted = st.form_submit_button("Kembali")
+                st.header('Congratulations! Your Account Has Been Successfully Created')
+                submitted = st.form_submit_button("Continue")
                 if submitted:
                     st.session_state.temp_register=[]
                     st.write('Kembali')
