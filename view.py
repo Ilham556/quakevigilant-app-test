@@ -1442,12 +1442,3 @@ class AppView:
             st.warning("Login gagal. Mohon cek kembali email dan password.")
         
         st.markdown("---")
-
-                
-                
-
-            
-
-    
-    
-    
