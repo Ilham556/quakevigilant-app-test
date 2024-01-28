@@ -21,6 +21,7 @@ from streamlit_folium import st_folium
 from streamlit_folium import folium_static
 from datetime import datetime as dt
 import pathlib
+import json
 
 
 
@@ -28,7 +29,7 @@ class AppModel:
     def __init__(self):
         def get_ssl_cert():
             current_path = pathlib.Path(__file__).parent.parent
-            return str(current_path/"DigiCertGlobalRootG2.crt.pem")
+            return str(current_path/"DigiCertGlobalRootCA.crt.pem")
         db_secrets = st.secrets["mysql"]
 
         self.earthquake_data = None
@@ -37,9 +38,9 @@ class AppModel:
                 password=db_secrets["password"],
                 host=db_secrets["host"],
                 port=3306,
-                database='test',
+                database=db_secrets['database'],
                 client_flags = [mysql.connector.ClientFlag.SSL],
-                ssl_ca = get_ssl_cert(),
+                ssl_ca = str('DigiCertGlobalRootCA.crt.pem'),
                 ssl_disabled=False                
             )
         self.query = "SELECT * FROM earthquakedata"
@@ -83,6 +84,7 @@ JOIN users ON artikel.penulis = users.id;"""
             print(f"Request failed with status code {response.status_code}")
     
     def df_usgs(self):
+        self.earthquake_data = self.api_usgs()
         df_properties = pd.DataFrame([feature['properties'] for feature in self.earthquake_data['features']])
         df_geometry = pd.DataFrame([feature['geometry']['coordinates'] for feature in self.earthquake_data['features']], columns=['longitude', 'latitude', 'depth'])
         #country, Reference_Point, state, status, tsunami,magnitudo, significance, data_type, longitude, latitude, depth, date
@@ -198,7 +200,7 @@ JOIN users ON artikel.penulis = users.id"""
             self.mydb.commit()
             self.query = "SELECT * FROM users"
             self.df_user = pd.read_sql(self.query, self.mydb)
-            st.info('Data Successfully Update.') 
+            st.info('Data Successfully Added, log in again to see the changes.') 
             
         except Exception as e:
             st.error(f'Error: {e}')
@@ -320,7 +322,7 @@ JOIN users ON artikel.penulis = users.id"""
             query = "INSERT INTO users (name, email, password, alamat, created_at, updated_at, is_admin) VALUES (%s, %s, %s, %s, %s, %s, %s)"
             cursor.execute(query, (name, email, password,alamat, created_at, updated_at, is_admin))
             self.mydb.commit()
-            st.info('Data Successfully Added, log in again to see the changes.') 
+            st.info('Data Successfully Added') 
         except Exception as e:
             st.error(f'Error: {e}')
     
@@ -354,6 +356,12 @@ JOIN users ON artikel.penulis = users.id"""
                 st.info('Data Successfully Deleted') 
             except Exception as e:
                 st.error(f'Error: {e}')
+    
+    def get_city(self):
+        with open('province.json') as file:
+            data_dict = json.load(file)
+        return data_dict
+
     
     
 
