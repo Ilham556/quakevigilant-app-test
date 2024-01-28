@@ -41,10 +41,7 @@ FROM artikel
 JOIN users ON artikel.penulis = users.id;"""
         self.df_artikel = pd.read_sql(self.query_artikel, self.mydb)
     
-    
-
-
-    def api_usgs(self):
+      def api_usgs(self):
         url = "https://earthquake.usgs.gov/fdsnws/event/1/query"
         today = date.today()
         start_of_week = today - datetime.timedelta(days=7)
