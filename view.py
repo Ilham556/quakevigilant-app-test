@@ -18,6 +18,7 @@ import folium
 from streamlit_folium import folium_static
 
 import plotly.express as px
+import re
 
 
 class AppView:
