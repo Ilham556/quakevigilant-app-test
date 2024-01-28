@@ -772,7 +772,7 @@ class AppView:
         time_threshold = datetime.datetime.now() - datetime.timedelta(days=7)
         # Menghitung Total Users dan New Users
         total_users = user_df.shape[0]
-        new_users = user_df[user_df['created_at'] > time_threshold].shape[0]  
+        new_users = user_df[user_df['created_at'] < time_threshold].shape[0]  
 
         percentage_new_users = (new_users / total_users) * 100 if total_users > 0 else 0
         nested_col1,nested_col2,nested_col3 = st.columns(3)
@@ -1501,11 +1501,3 @@ class AppView:
         
         st.markdown("---")
 
-                
-                
-
-            
-
-    
-    
-    
