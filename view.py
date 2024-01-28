@@ -3,22 +3,21 @@ import hydralit_components as hc
 from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode, AgGridTheme
 import pandas as pd
 from pandas.api.types import is_bool_dtype, is_numeric_dtype
-import mysql.connector
+
 import datetime
 from datetime import date, timedelta
-import numpy as np
+
 from streamlit_option_menu import option_menu
-import altair as alt
-import requests
+
+
 import geopandas
-from folium.plugins import MarkerCluster
-from folium.plugins import HeatMap
+
 from folium import plugins
 import folium
-from streamlit_folium import st_folium
-from streamlit_folium import folium_static
-from datetime import datetime as dt
 
+from streamlit_folium import folium_static
+
+import plotly.express as px
 
 
 
@@ -125,6 +124,34 @@ class AppView:
 
         # Display the map using Streamlit's folium_chart
         folium_static(my_map)
+    
+    def scattergeo(self,df):
+        st.write(df.describe())
+        gb_top = df.groupby(["reference_point"])\
+                .agg({"significance":"max", "magnitudo":"max"})\
+                .reset_index()
+                
+
+        b = df[["year", "reference_point","significance","longitude", "latitude","magnitudo"]]
+        merge = pd.merge(gb_top, b, how = "inner", on =["reference_point","significance", "magnitudo"]).sort_values(by="year")
+
+        st.write(merge)
+
+        fig = px.scatter_geo(merge, 
+                            lat="latitude", lon="longitude", 
+                            size="significance",
+                            animation_frame="year",
+                            text="reference_point",
+                            projection="natural earth",
+                            title = "Strongest eartquake by year")
+        fig.update_traces(textfont_color='black')
+        fig.update_layout(height=600, width=800)
+        fig.update_geos(
+            lonaxis_range=[90, 150],  # Longitude range for Indonesia
+            lataxis_range=[-10, 10],  # Latitude range for Indonesia
+            projection_scale=0.5  # Adjust the scale for a better view
+        )
+        return st.plotly_chart(fig, theme=None, use_container_width=True)
     
     def show_map(self,df):
         m = folium.Map(location=[-0.789275 , 113.921327], zoom_start=3, zoom_control=False)
@@ -650,34 +677,38 @@ class AppView:
         
     def graphview_barchart(self,data):
         try:
-            columns = st.selectbox('Select Categorical Features: ',['dayperiod','categorical earthquake','season','depth category'],index=0)
-            if not columns:
-                data = data
-                columns = ''
-            else:
+            columns = st.selectbox('Select Categorical Features: ', ['dayperiod', 'categorical earthquake', 'season', 'depth category'], index=0)
+
+            if columns:
                 if columns == 'dayperiod':
-                    st.bar_chart(data = data[columns].value_counts().rename_axis('time session').reset_index(name='amount'),x = 'time session',y = 'amount')
+                    fig = px.bar(data[columns].value_counts().rename_axis('time session').reset_index(name='amount'), x='time session', y='amount', labels={'time session': 'Time Session', 'amount': 'Amount'})
                 elif columns == 'categorical earthquake':
-                    st.bar_chart(data=data[columns].value_counts().rename_axis('strength level').reset_index(name='amount'),
-                                x='strength level', y='amount')
+                    fig = px.bar(data[columns].value_counts().rename_axis('strength level').reset_index(name='amount'), x='strength level', y='amount', labels={'strength level': 'Strength Level', 'amount': 'Amount'}, color='strength level')
                 elif columns == 'season':
-                    st.bar_chart(data=data[columns].value_counts().rename_axis('season').reset_index(name='amount'),
-                                x='season', y='amount')
+                    fig = px.bar(data[columns].value_counts().rename_axis('season').reset_index(name='amount'), x='season', y='amount', labels={'season': 'Season', 'amount': 'Amount'}, color='season')
                 elif columns == 'depth category':
-                    st.bar_chart(data=data[columns].value_counts().rename_axis('depth level').reset_index(name='amount'),
-                                x='depth level', y='amount')
-        except:
-            pass
+                    fig = px.bar(data[columns].value_counts().rename_axis('depth level').reset_index(name='amount'), x='depth level', y='amount', labels={'depth level': 'Depth Level', 'amount': 'Amount'}, color='depth level')
+
+                # Show Plotly Express bar chart with legend
+                st.plotly_chart(fig, use_container_width=True)
+
+        except Exception as e:
+            st.write(f"Error: {e}")
     
     def graphview_barchart2(self,data):
         df = data
         try:
             columns = st.selectbox('Select Category Numerical', ['year', 'quarter', 'month', 'latitude', 'longitude', 'depth', 'magnitudo'], index=0)
+
             if columns:
                 if columns in ['year', 'quarter', 'month']:
-                    st.bar_chart(data=df[columns].value_counts().rename_axis(columns).reset_index(name='count'), x=columns, y='count')
+                    fig = px.bar(df[columns].value_counts().rename_axis(columns).reset_index(name='count'), x=columns, y='count', labels={columns: columns, 'count': 'Count'})
                 elif columns in ['latitude', 'longitude', 'depth', 'magnitudo']:
-                    st.bar_chart(data=df[[columns]].value_counts().rename_axis(columns).reset_index(name='count'), x=columns, y='count')
+                    fig = px.bar(df[[columns]].value_counts().rename_axis(columns).reset_index(name='count'), x=columns, y='count', labels={columns: columns, 'count': 'Count'}, color=columns)
+
+                # Show Plotly Express bar chart
+                st.plotly_chart(fig, use_container_width=True)
+
         except Exception as e:
             st.write(f"Error: {e}")
         
@@ -694,43 +725,45 @@ class AppView:
                     df_filtered = df
                     category = ''
                 else:
+                    # Sorting and filtering data
                     altair_data = df.sort_values(by='year')
                     altair_data = altair_data[['year', category]].value_counts().reset_index(name='amount')
                     altair_data = altair_data.sort_values(by='year')
 
-                    # Create Altair chart
-                    c = alt.Chart(altair_data[altair_data['year'].isin([year])]).mark_bar().encode(
-                        alt.Column('year'),
-                        alt.X(category),
-                        alt.Y('amount'),
-                        alt.Color(category, legend=alt.Legend(orient='bottom')),
-                        tooltip=[category, 'amount']
-                    ).properties(
-                        height=437,
-                        width=952
-                    ).configure_axis(
-                        labelColor='white',
-                        titleColor='white'
-                    )
+                    # Filter data for a specific year
+                    filtered_data = altair_data[altair_data['year'].isin([year])]
 
-                    # Show Altair chart
-                    st.altair_chart(c,theme="streamlit", use_container_width=True)
+                    # Create Plotly Express chart
+                    fig = px.bar(filtered_data, x=category, y='amount', color=category,
+                                labels={category: f"{category} Values", 'amount': 'Amount'},
+                                title=f"Bar Chart for {category} in {year}",
+                                height=437, width=952)
+
+                    # Show Plotly Express chart
+                    st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
                 st.error(f"An error occurred: {e}")
         
         elif columns == 'based on magnitude distribution':
             try:
-                columns = st.selectbox('Select Category ', ['dayperiod', 'season', 'depth category'], index=0)
-                if not columns:
+                # Select specific category
+                category = st.selectbox('Select Category', ['dayperiod', 'season', 'depth category'], index=0)
+
+                if not category:
                     data = data
-                    columns = ''
+                    category = ''
                 else:
-                    c = alt.Chart(data).mark_boxplot().encode(
-                        y='magnitudo', x=columns
-                    )
-                    st.altair_chart(c, theme="streamlit", use_container_width=True)
-            except:
-                pass
+                    # Create Plotly Express boxplot
+                    fig = px.box(data, x=category, y='magnitudo',
+                                labels={category: f"{category} Values", 'magnitudo': 'Magnitude'},
+                                title=f"Boxplot for Magnitude Distribution based on {category}",
+                                height=437, width=952)
+
+                    # Show Plotly Express boxplot
+                    st.plotly_chart(fig, use_container_width=True)
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
     
     def Summarizeview_user(self,df):
         user_df = df
@@ -1144,6 +1177,7 @@ class AppView:
     def graphview(self):
         self.controller.filtered_graph()
         self.controller.title_graph()
+        self.scattergeo(self.controller.df_heatmap)
         self.graphview_barchart(self.controller.df_heatmap)
         self.graphview_barchart2(self.controller.df_heatmap)
         st.markdown("---")
@@ -1361,17 +1395,11 @@ class AppView:
                 submitted = st.form_submit_button("Continue")
                 if submitted:
                     st.session_state.temp_register=[]
-                    st.write('Kembali')
                     step1()
                     st.experimental_rerun()
         
         st.markdown("---")
                 
-
-
-
-
-
     
     def loginview(self):
         self.title('Login')
@@ -1442,12 +1470,3 @@ class AppView:
             st.warning("Login gagal. Mohon cek kembali email dan password.")
         
         st.markdown("---")
-
-                
-                
-
-            
-
-    
-    
-    
