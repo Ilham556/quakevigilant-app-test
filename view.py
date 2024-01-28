@@ -242,6 +242,45 @@ class AppView:
 
         return grid
     
+    def table_admin(self,df,status):
+        # Konfigurasi GridOptionsBuilder
+        if status == 'aktif':
+            status = True
+        elif status == 'tidak':
+            status = False
+        else:
+            status = False
+        gb = GridOptionsBuilder.from_dataframe(df)
+        gb.configure_default_column(
+            editable=False, filter=False, resizable=True, sortable=True, value=True, 
+            enablePivot=True, enableValue=True, floatingFilter=True, aggFunc='sum', 
+            flex=1, minWidth=150, width=150, maxWidth=200
+        )
+        gb.configure_selection(selection_mode='multiple', use_checkbox=status)
+        gb.configure_pagination(enabled=True, paginationAutoPageSize=True)
+        gridOptions = gb.build()
+
+        # Konfigurasi Grid
+        grid = AgGrid(
+            df,
+            gridOptions=gridOptions,
+            data_return_mode=DataReturnMode.AS_INPUT,
+            update_on='MANUAL',
+            enable_quicksearch=True,
+            fit_columns_on_grid_load=True,
+            theme=AgGridTheme.STREAMLIT,
+            enable_enterprise_modules=True,
+            height=600,
+            width='100%',
+            custom_css={
+                "#gridToolBar": {
+                    "padding-bottom": "0px !important",
+                }
+            }
+        )
+
+        return grid
+    
     def css(self):
         css = """
         <style>
@@ -250,6 +289,34 @@ class AppView:
                 height: 50px;
                 font-size: 20px;
             }
+            div[data-testid="stToolbar"] {
+            visibility: hidden;
+            height: 0%;
+            position: fixed;
+            }
+            div[data-testid="stDecoration"] {
+            visibility: hidden;
+            height: 0%;
+            position: fixed;
+            }
+            div[data-testid="stStatusWidget"] {
+            visibility: hidden;
+            height: 0%;
+            position: fixed;
+            }
+            #MainMenu {
+            visibility: hidden;
+            height: 0%;
+            }
+            header {
+            visibility: hidden;
+            height: 0%;
+            }
+            footer {
+            visibility: hidden;
+            height: 0%;
+            }
+
         </style>
         """
         st.markdown(css, unsafe_allow_html=True)
@@ -259,6 +326,8 @@ class AppView:
         <style>
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
+        header {visibility: hidden;}
+        div.embeddedAppMetaInfoBar_container__DxxL1 {visibility: hidden;}
         </style>
 
         """
@@ -616,7 +685,7 @@ class AppView:
         if columns == 'based on feature categories':
             try:
                 # Select specific category
-                category = st.selectbox('Select Category', ['dayperiod', 'categorical_earthquake', 'season', 'depth_category'], index=0)
+                category = st.selectbox('Select Category', ['dayperiod', 'categorical earthquake', 'season', 'depth category'], index=0)
 
                 # Select year
                 year = st.selectbox('Year', list(df['year'].unique()), index=0)
@@ -806,9 +875,11 @@ class AppView:
     def earthquakemanagementadminview(self):
         self.title("EarthQuake Management")
         editmode = st.toggle(label = "Edit Mode")  
+        status = 'tidak'
         if editmode == True:  
+            status = 'aktif'
             st.download_button(label="Export CSV",data=self.controller.df_heatmap.to_csv(),file_name="QuakeVigilant_earthquake.csv") 
-        grid = self.table(self.controller.df_heatmap)   
+        grid = self.table_admin(self.controller.df_heatmap, status)   
         selected_rows = grid['selected_rows']
         
         if editmode == True:
@@ -898,9 +969,11 @@ class AppView:
         self.title("Article Management")
         now = datetime.datetime.now()
         editmode = st.toggle(label = "Edit Mode")  
+        status = 'tidak'
         if editmode == True:  
+            status = 'aktif'
             st.download_button(label="Export CSV",data=self.controller.df_artikel.to_csv(),file_name="QuakeVigilant_artikel.csv") 
-        grid = self.table(self.controller.df_artikel)  
+        grid = self.table_admin(self.controller.df_artikel, status)  
         selected_rows = grid['selected_rows']
         if editmode == True:
             if not grid.selected_rows:
@@ -953,9 +1026,11 @@ class AppView:
         self.title("User Management")
         now = datetime.datetime.now()
         editmode = st.toggle(label = "Edit Mode")  
+        status = 'tidak'
         if editmode == True:  
+            status = 'aktif'
             st.download_button(label="Export CSV",data=self.controller.df_user.to_csv(),file_name="QuakeVigilant_user.csv") 
-        grid = self.table(self.controller.df_user)
+        grid = self.table_admin(self.controller.df_user, status)
         selected_rows = grid['selected_rows']
         if editmode == True:
             if not grid.selected_rows:
@@ -1155,24 +1230,148 @@ class AppView:
     def registerview(self):
         self.title('Register')
         now = datetime.datetime.now()
-        with st.form("add_user",clear_on_submit=True):
-            self.name_user_register = st.text_input(label="name")
-            self.email_user_register = st.text_input(label="email")
-            self.password_user_register = st.text_input(label="password")
-            home_address_input = st.text_input(label="Home Address")
-            city_input = st.text_input(label="City or Regency")
-            province_input = st.text_input(label="Province")
-            country_input = st.text_input(label="Country")
-            self.address_user_register = f"{home_address_input}, {city_input}, {province_input}, {country_input}"
-            self.created_at_user_register = now.strftime("%Y-%m-%d %H:%M:%S")
-            self.update_at_user_register = now.strftime("%Y-%m-%d %H:%M:%S")
-            self.is_admin_user_register = 0
-            submitteds = st.form_submit_button("Register")  
-            if submitteds:
-                st.session_state.register_user = self.controller.register_myuser(
-                    self.name_user_register, self.email_user_register,self.password_user_register,
-                    self.address_user_register, self.created_at_user_register, self.update_at_user_register, self.is_admin_user_register
+        indexCity = self.controller.get_city()
+
+        if "temp_register" not in st.session_state:
+            st.session_state.temp_register = []
+
+        def step1():
+            st.session_state["stage"] = "step1"
+
+        def step2():
+            st.session_state["stage"] = "step2"
+
+        def step3():
+            st.session_state["stage"] = "step3"
+
+        def step4():
+            st.session_state["stage"] = "step4"
+
+        def finalstep():
+            st.session_state["stage"] = "finalstep"
+
+        def Confrimation():
+            st.session_state["stage"] = "confirmation"
+
+        if "stage" not in st.session_state:
+            st.session_state["stage"] = "step1"
+
+        if st.session_state["stage"] == "step1":
+            with st.form("step1_form"):
+                st.header('Step 1: Personal Information')
+                name_user_register = st.text_input(label="name")
+                email_user_register = st.text_input(label="email")
+                password_user_register = st.text_input(label="password", type='password')
+                confirm_pw_user_register = st.text_input(label="confirm password", type='password')
+
+                submitted = st.form_submit_button(
+                    "Next"
                 )
+                if submitted:
+                    if password_user_register != confirm_pw_user_register:
+                        st.info('password Tidak Sama')
+                    else:
+                        st.session_state.temp_register.append([name_user_register,email_user_register,password_user_register,confirm_pw_user_register])
+                        step2()
+                        st.experimental_rerun()
+
+        elif st.session_state["stage"] == "step2":
+            with st.form("step2_story_form"):
+                st.header('Step 2: Country')
+                country_input = st.selectbox(label="Country", options=['Indonesia'])
+                submitted = st.form_submit_button("Next")
+                if submitted:
+                    st.session_state.temp_register.append([country_input])
+                    step3()
+                    st.experimental_rerun()
+                prev = st.form_submit_button("Prev")
+                if prev:
+                    st.session_state.temp_register.pop()
+                    step1()
+                    st.experimental_rerun()
+                    
+        elif st.session_state["stage"] == "step3":
+            st.write(str(st.session_state.temp_register[1][0]))
+            with st.form("step3_params_form"):
+                st.header('Step 3: Province')
+                province_options = list(indexCity.keys())
+                province_input = st.selectbox(label="Province", options=province_options)
+                submitted = st.form_submit_button("Next")
+                if submitted:
+                    st.session_state.temp_register.append([province_input])
+                    step4()
+                    st.experimental_rerun()
+                prev = st.form_submit_button("Prev")
+                if prev:
+                    st.session_state.temp_register.pop()
+                    step2()
+                    st.experimental_rerun()
+                    
+        elif st.session_state["stage"] == "step4":
+            st.write(str(st.session_state.temp_register[2][0]))
+            with st.form("step4_params_form"):
+                st.header('Step 4: City')
+                city_options = indexCity
+                city_input = st.selectbox(label="City", options=city_options.get(st.session_state.temp_register[2][0], []))
+                home_address_input = st.text_input(label="Home Address")
+                submitted = st.form_submit_button("Next")
+                if submitted:
+                    st.session_state.temp_register.append([city_input,home_address_input])
+                    finalstep()
+                    st.experimental_rerun()
+                prev = st.form_submit_button("Prev")
+                if prev:
+                    st.session_state.temp_register.pop()
+                    step3()
+                    st.experimental_rerun()
+
+        elif st.session_state["stage"] == "finalstep":
+            st.write(str(st.session_state.temp_register[2][0]))
+            with st.form("finalstep_params_form"):
+                st.header('Final Step: Confrimation User Infomation')
+                self.name_user_register = st.text_input(label="name", value=st.session_state.temp_register[0][0], disabled=True)
+                self.email_user_register = st.text_input(label="email", value=st.session_state.temp_register[0][1], disabled=True)
+                self.password_user_register = st.text_input(label="password", value=st.session_state.temp_register[0][2], type='password', disabled=True)
+                country_input = st.text_input(label="Country", value=st.session_state.temp_register[1][0], disabled=True)
+                province_input = st.text_input(label="Province", value=st.session_state.temp_register[2][0], disabled=True)
+                city_input = st.text_input(label="City", value=st.session_state.temp_register[3][0], disabled=True)
+                home_address_input = st.text_input(label="Home Address" , value=st.session_state.temp_register[3][1], disabled=True)
+                self.address_user_register = f"{home_address_input}, {city_input}, {province_input}, {country_input}"
+                self.created_at_user_register = now.strftime("%Y-%m-%d %H:%M:%S")
+                self.update_at_user_register = now.strftime("%Y-%m-%d %H:%M:%S")
+                self.is_admin_user_register = 0                
+                submitted = st.form_submit_button("Submit")
+                if submitted:
+                    self.controller.register_myuser(
+                        self.name_user_register, self.email_user_register,self.password_user_register,
+                        self.address_user_register, self.created_at_user_register, self.update_at_user_register, self.is_admin_user_register
+                    )
+                    st.write('Register')
+                    Confrimation()
+                    
+                prev = st.form_submit_button("Prev")
+                if prev:
+                    st.session_state.temp_register.pop()
+                    step4()
+                    st.experimental_rerun()
+
+        elif st.session_state["stage"] == "confirmation":
+            st.balloons()
+            with st.form("confirmation_params_form"):
+                st.header('Selamat Akun Anda Telah Dibuat')
+                submitted = st.form_submit_button("Kembali")
+                if submitted:
+                    st.session_state.temp_register=[]
+                    st.write('Kembali')
+                    step1()
+                    st.experimental_rerun()
+                
+
+        st.write(st.session_state.temp_register)
+        st.write()
+
+
+
     
     def loginview(self):
         self.title('Login')
@@ -1232,8 +1431,7 @@ class AppView:
             submitted = st.form_submit_button('Submit',disabled=editmode)
             if submitted:
                 st.session_state.update = self.controller.update_myuser(self.name_user,self.email_user,self.password_user,self.address_user,self.update_at_input_user,user_info['id'])
-                st.experimental_rerun()
-                
+
         if login_status == 'berhasil':
             if st.button('Logout'):
                   # Check if the Logout button is clicked
