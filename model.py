@@ -53,17 +53,17 @@ JOIN users ON artikel.penulis = users.id;"""
             "endtime":end_of_week.isoformat(),
             "minmagnitude": 2.5
         }
-    
+        
         # Melakukan permintaan GET ke API
         response = requests.get(url, params=params)
-    
+        
         # Mengecek status permintaan
         if response.status_code == 200:
             # Mengubah data yang diterima menjadi JSON
             self.earthquake_data = response.json()
             return self.earthquake_data
         
-    
+        
         else:
             print(f"Request failed with status code {response.status_code}")
     
