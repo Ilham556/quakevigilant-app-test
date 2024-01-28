@@ -105,10 +105,8 @@ class AppController:
     def register_myuser(self, name, email, password, alamat, created_at, updated_at, is_admin):
         if any(value == "" for value in (name, email, password, alamat, created_at, updated_at)):
             st.warning('All fields must be filled')
-
         else:
-            self.model.register_myuser(name, email, password, alamat, created_at, updated_at, is_admin)
-            st.experimental_rerun()
+            return self.model.register_myuser(name, email, password, alamat, created_at, updated_at, is_admin)
     
     def Summarizeview_user(self):
         self.view.Summarizeview_user(self.df_user)
