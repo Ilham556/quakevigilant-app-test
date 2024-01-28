@@ -20,9 +20,6 @@ from streamlit_folium import folium_static
 import plotly.express as px
 
 
-
-
-
 class AppView:
     def __init__(self):
 
@@ -126,7 +123,6 @@ class AppView:
         folium_static(my_map)
     
     def scattergeo(self,df):
-        st.write(df.describe())
         gb_top = df.groupby(["reference_point"])\
                 .agg({"significance":"max", "magnitudo":"max"})\
                 .reset_index()
@@ -135,7 +131,6 @@ class AppView:
         b = df[["year", "reference_point","significance","longitude", "latitude","magnitudo"]]
         merge = pd.merge(gb_top, b, how = "inner", on =["reference_point","significance", "magnitudo"]).sort_values(by="year")
 
-        st.write(merge)
 
         fig = px.scatter_geo(merge, 
                             lat="latitude", lon="longitude", 
