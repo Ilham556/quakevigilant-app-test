@@ -1,25 +1,4 @@
 import streamlit as st
-import hydralit_components as hc
-from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode, AgGridTheme
-import pandas as pd
-from pandas.api.types import is_bool_dtype, is_numeric_dtype
-import mysql.connector
-import datetime
-from datetime import date, timedelta
-import numpy as np
-from streamlit_option_menu import option_menu
-import altair as alt
-import requests
-import geopandas
-from folium.plugins import MarkerCluster
-from folium.plugins import HeatMap
-from folium import plugins
-import folium
-from streamlit_folium import st_folium
-from streamlit_folium import folium_static
-from datetime import datetime as dt
-
-
 
 # controller.py
 from model import AppModel
@@ -105,8 +84,11 @@ class AppController:
     def register_myuser(self, name, email, password, alamat, created_at, updated_at, is_admin):
         if any(value == "" for value in (name, email, password, alamat, created_at, updated_at)):
             st.warning('All fields must be filled')
+
         else:
             return self.model.register_myuser(name, email, password, alamat, created_at, updated_at, is_admin)
+            
+
     
     def Summarizeview_user(self):
         self.view.Summarizeview_user(self.df_user)
@@ -170,3 +152,17 @@ class AppController:
     def get_city(self):
         return self.model.get_city()
     
+    
+
+    
+    
+    
+
+    
+
+    
+    
+        
+
+
+
