@@ -21,11 +21,13 @@ import plotly.express as px
 import re
 
 
+
+
 class AppView:
     def __init__(self):
 
         self.menu_id=""
-        st.set_page_config(page_title="QuakeVigilant",layout='wide', initial_sidebar_state='collapsed',)
+        st.set_page_config(page_title="QuakeVigilant",layout='wide',page_icon="⚠️")
         #auth
         self.controller = None
         self.login_email = None
@@ -124,6 +126,7 @@ class AppView:
         folium_static(my_map)
     
     def scattergeo(self,df):
+        st.write(df.describe())
         gb_top = df.groupby(["reference_point"])\
                 .agg({"significance":"max", "magnitudo":"max"})\
                 .reset_index()
@@ -132,6 +135,7 @@ class AppView:
         b = df[["year", "reference_point","significance","longitude", "latitude","magnitudo"]]
         merge = pd.merge(gb_top, b, how = "inner", on =["reference_point","significance", "magnitudo"]).sort_values(by="year")
 
+        st.write(merge)
 
         fig = px.scatter_geo(merge, 
                             lat="latitude", lon="longitude", 
@@ -162,6 +166,7 @@ class AppView:
             else:
                 kota = 'No place information available'
             magnitude = row['mag']
+            significance = row['sig']
             kedalaman = row['depth']
             waktu = row['time']
             lat = row['latitude']
@@ -170,11 +175,12 @@ class AppView:
             # Membuat teks popup yang lebih informatif
             popup_text = f"""
             <strong>Earthquake Information:</strong><br>
-            Magnitude: {magnitude}<br>
-            Region: {kota}<br>
-            Country: {negara}<br>
-            Depth: {kedalaman} km<br>
-            Time of Occurrence: {waktu}
+            Magnitude: <strong>{magnitude}</strong><br>
+            Significance: <strong>{significance}</strong><br>
+            Region: <strong>{kota}</strong><br>
+            Country: <strong>{negara}</strong><br>
+            Depth: <strong>{kedalaman} km</strong><br>
+            Time of Occurrence: <strong>{waktu}</strong>
             """
 
             folium.CircleMarker(
@@ -215,9 +221,9 @@ class AppView:
         for i, row in geo_pivot.iterrows():
             popup_text = f"""
             <strong>Earthquake Information:</strong><br>
-            Region: {row['reference_point']}<br>
-            Country: {row['state']}<br>
-            Number of Occurrences: {str(row['counts'])}
+            Region: <strong>{row['reference_point']}</strong><br>
+            Country: <strong>{row['state']}</strong><br>
+            Number of Occurrences: <strong>{str(row['counts'])}</strong>
             """
 
             folium.Marker(location=[row.geometry.y, row.geometry.x],popup = popup_text).add_to(m)
@@ -763,20 +769,19 @@ class AppView:
     
     def Summarizeview_user(self,df):
         user_df = df
+        time_threshold = datetime.datetime.now() - datetime.timedelta(days=7)
         # Menghitung Total Users dan New Users
         total_users = user_df.shape[0]
-        new_users = user_df[user_df['created_at'] == user_df['updated_at']].shape[0]  # Anggaplah yang 'created_at' dan 'updated_at' sama sebagai New Users
+        new_users = user_df[user_df['created_at'] > time_threshold].shape[0]  
 
-        # Menghitung Persentase New Users
-        
         percentage_new_users = (new_users / total_users) * 100 if total_users > 0 else 0
         nested_col1,nested_col2,nested_col3 = st.columns(3)
         with nested_col1:
             st.metric("Total Users", total_users)
         with nested_col2:
-            st.metric("New Users", new_users)
+            st.metric("New Users (last 7 days)", new_users)
         with nested_col3:
-            st.metric("Persentase New Users", f"{percentage_new_users:.2f}%")
+            st.metric("Persentase New Users (last 7 days)", f"{percentage_new_users:.2f}%")
     
     def graphview_user(self,df):
         user_df = df
@@ -791,13 +796,25 @@ class AppView:
         elif columns == 'User Creation Time':
             # Visualization of User Creation Time
             st.subheader("User Creation Time")
-            user_df['created_at'] = pd.to_datetime(user_df['created_at'])
-            created_at_chart = alt.Chart(user_df).mark_bar().encode(
-                x='created_at:T',
-                y='count()',
-                tooltip=['count()']
-            ).properties(width=600, height=400)
-            st.altair_chart(created_at_chart,use_container_width=True)
+            user_df['created_month'] = user_df['created_at'].dt.to_period('M')
+
+            # Mengelompokkan berdasarkan bulan dan menghitung jumlah pengguna untuk setiap bulan
+            plot_data = user_df['created_month'].value_counts().sort_index().reset_index()
+            plot_data.columns = ['created_month', 'user_count']
+
+            # Konversi objek Period menjadi string
+            plot_data['created_month'] = plot_data['created_month'].astype(str)
+
+            # Membuat plot interaktif dengan Plotly Express
+            fig = px.line(plot_data, x='created_month', y='user_count', markers=True, line_shape='linear',
+                        labels={'created_month': 'Bulan Pembuatan', 'user_count': 'Jumlah Pengguna'},
+                        title='Jumlah Pengguna Per Bulan Pembuatan')
+
+            # Menyesuaikan tampilan sumbu x
+            fig.update_xaxes(tickangle=45, tickmode='array', tickvals=plot_data['created_month'],
+                            ticktext=plot_data['created_month'])
+
+            st.plotly_chart(fig, use_container_width=True)
 
 
         elif columns == 'User Address':
@@ -908,7 +925,7 @@ class AppView:
         if editmode == True:  
             status = 'aktif'
             st.download_button(label="Export CSV",data=self.controller.df_heatmap.to_csv(),file_name="QuakeVigilant_earthquake.csv") 
-        grid = self.table_admin(self.controller.df_heatmap, status)   
+        grid = self.controller.table_admin(self.controller.df_heatmap, status)   
         selected_rows = grid['selected_rows']
         
         if editmode == True:
@@ -1002,7 +1019,7 @@ class AppView:
         if editmode == True:  
             status = 'aktif'
             st.download_button(label="Export CSV",data=self.controller.df_artikel.to_csv(),file_name="QuakeVigilant_artikel.csv") 
-        grid = self.table_admin(self.controller.df_artikel, status)  
+        grid = self.controller.table_admin(self.controller.df_artikel, status)  
         selected_rows = grid['selected_rows']
         if editmode == True:
             if not grid.selected_rows:
@@ -1059,7 +1076,7 @@ class AppView:
         if editmode == True:  
             status = 'aktif'
             st.download_button(label="Export CSV",data=self.controller.df_user.to_csv(),file_name="QuakeVigilant_user.csv") 
-        grid = self.table_admin(self.controller.df_user, status)
+        grid = self.controller.table_admin(self.controller.df_user, status)
         selected_rows = grid['selected_rows']
         if editmode == True:
             if not grid.selected_rows:
@@ -1080,11 +1097,14 @@ class AppView:
                     submitted = st.form_submit_button("Submit")  
 
                     if submitted:
-                        self.controller.createdata_user(
-                            self.name_user_create, self.email_user_create, self.password_user_create, 
-                            self.address_user_create, created_at_input, update_at_input, 
-                            self.is_admin_user_create
-                        )
+                        if not re.match(r"[^@]+@[^@]+\.[^@]+", self.email_user_create):
+                            st.warning('Invalid email address')
+                        else:
+                            self.controller.createdata_user(
+                                self.name_user_create, self.email_user_create, self.password_user_create, 
+                                self.address_user_create, created_at_input, update_at_input, 
+                                self.is_admin_user_create
+                            )
             else:
                 id_user = [row.get("id") for row in selected_rows] 
                 if len(grid.selected_rows) == 1:
@@ -1116,15 +1136,18 @@ class AppView:
                             if len(grid.selected_rows) == 1:   
                                 update_button = st.form_submit_button("Update")
                                 if update_button:
-                                    self.controller.updatedata_user(
-                                        self.name_user_update,
-                                        self.email_user_update,
-                                        self.password_user_update,
-                                        self.address_user_update,
-                                        update_at_input,
-                                        self.is_admin_user_update,
-                                        str(id_user[0])
-                                    )
+                                    if not re.match(r"[^@]+@[^@]+\.[^@]+", self.email_user_update):
+                                        st.warning('Invalid email address')
+                                    else:
+                                        self.controller.updatedata_user(
+                                            self.name_user_update,
+                                            self.email_user_update,
+                                            self.password_user_update,
+                                            self.address_user_update,
+                                            update_at_input,
+                                            self.is_admin_user_update,
+                                            str(id_user[0])
+                                        )
                 if len(grid.selected_rows) != 1:   
                     st.write(id_user)
                     delete_button = st.button(f"Delete({len(grid.selected_rows)})")
@@ -1300,6 +1323,10 @@ class AppView:
                 if submitted:
                     if password_user_register != confirm_pw_user_register:
                         st.info('password Tidak Sama')
+                    elif len(password_user_register) < 8:  # Adjust the minimum password length as needed
+                        st.warning('Password must be at least 8 characters long')
+                    elif not re.match(r"[^@]+@[^@]+\.[^@]+", email_user_register):
+                        st.warning('Invalid email address')
                     else:
                         st.session_state.temp_register.append([name_user_register,email_user_register,password_user_register,confirm_pw_user_register])
                         step2()
@@ -1418,6 +1445,8 @@ class AppView:
                 st.warning('Email or Password Is Empty')
                 st.session_state.login = ""
                 pass
+            elif not re.match(r"[^@]+@[^@]+\.[^@]+", self.login_email):
+                st.warning('Invalid email address')
             else:
                 st.session_state.login = self.controller.login_validation(self.login_email, self.login_password)
                 login_status, self.user_info = st.session_state.login
@@ -1454,7 +1483,12 @@ class AppView:
             self.update_at_input_user = now.strftime("%Y-%m-%d %H:%M:%S")
             submitted = st.form_submit_button('Submit',disabled=editmode)
             if submitted:
-                st.session_state.update = self.controller.update_myuser(self.name_user,self.email_user,self.password_user,self.address_user,self.update_at_input_user,user_info['id'])
+                if not re.match(r"[^@]+@[^@]+\.[^@]+", self.email_user):
+                    st.warning('Invalid email address')
+                elif len(self.password_user) < 8:  # Adjust the minimum password length as needed
+                    st.warning('Password must be at least 8 characters long')
+                else:
+                    st.session_state.update = self.controller.update_myuser(self.name_user,self.email_user,self.password_user,self.address_user,self.update_at_input_user,user_info['id'])
 
         if login_status == 'berhasil':
             if st.button('Logout'):
@@ -1466,3 +1500,12 @@ class AppView:
             st.warning("Login gagal. Mohon cek kembali email dan password.")
         
         st.markdown("---")
+
+                
+                
+
+            
+
+    
+    
+    
