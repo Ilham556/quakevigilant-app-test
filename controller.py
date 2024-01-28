@@ -36,7 +36,6 @@ class AppController:
         self.df_artikel = self.model.df_artikel
         self.df_user = self.model.df_user
 
-        
     def filtered_map_usgs(self):
         self.df = self.view.homeviewfilter(self.df)
         return self.df
@@ -108,7 +107,8 @@ class AppController:
             st.warning('All fields must be filled')
 
         else:
-            return self.model.register_myuser(name, email, password, alamat, created_at, updated_at, is_admin)
+            self.model.register_myuser(name, email, password, alamat, created_at, updated_at, is_admin)
+            st.experimental_rerun()
     
     def Summarizeview_user(self):
         self.view.Summarizeview_user(self.df_user)
@@ -168,6 +168,9 @@ class AppController:
     def deletedata_user(self,ids):
         self.model.deletedata_user(ids)
         st.experimental_rerun()
+    
+    def get_city(self):
+        return self.model.get_city()
     
     
 
