@@ -1291,7 +1291,6 @@ class AppView:
                     st.experimental_rerun()
                     
         elif st.session_state["stage"] == "step3":
-            st.write(str(st.session_state.temp_register[1][0]))
             with st.form("step3_params_form"):
                 st.header('Step 3: Province')
                 province_options = list(indexCity.keys())
@@ -1308,7 +1307,6 @@ class AppView:
                     st.experimental_rerun()
                     
         elif st.session_state["stage"] == "step4":
-            st.write(str(st.session_state.temp_register[2][0]))
             with st.form("step4_params_form"):
                 st.header('Step 4: City')
                 city_options = indexCity
@@ -1365,10 +1363,11 @@ class AppView:
                     st.write('Kembali')
                     step1()
                     st.experimental_rerun()
+        
+        st.markdown("---")
                 
 
-        st.write(st.session_state.temp_register)
-        st.write()
+
 
 
 
@@ -1442,3 +1441,12 @@ class AppView:
             st.warning("Login gagal. Mohon cek kembali email dan password.")
         
         st.markdown("---")
+
+                
+                
+
+            
+
+    
+    
+    
