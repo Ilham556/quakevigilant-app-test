@@ -126,7 +126,6 @@ class AppView:
         folium_static(my_map)
     
     def scattergeo(self,df):
-        st.write(df.describe())
         gb_top = df.groupby(["reference_point"])\
                 .agg({"significance":"max", "magnitudo":"max"})\
                 .reset_index()
@@ -134,8 +133,6 @@ class AppView:
 
         b = df[["year", "reference_point","significance","longitude", "latitude","magnitudo"]]
         merge = pd.merge(gb_top, b, how = "inner", on =["reference_point","significance", "magnitudo"]).sort_values(by="year")
-
-        st.write(merge)
 
         fig = px.scatter_geo(merge, 
                             lat="latitude", lon="longitude", 
@@ -154,7 +151,7 @@ class AppView:
         return st.plotly_chart(fig, theme=None, use_container_width=True)
     
     def show_map(self,df):
-        m = folium.Map(location=[-0.789275 , 113.921327], zoom_start=3, zoom_control=False)
+        m = folium.Map(location=[-0.789275 , 113.921327], zoom_start=4, zoom_control=False)
         for index, row in df.iterrows():
             if row['place'] is not None:
                 place_parts = row['place'].split(",")
@@ -204,7 +201,7 @@ class AppView:
         geometry = geopandas.points_from_xy(df.longitude, df.latitude)
         geo_df = geopandas.GeoDataFrame(df[df.columns],
                             geometry=geometry)
-        m = folium.Map(location=[-0.789275 , 113.921327], tiles="Cartodb dark_matter", zoom_start=3)
+        m = folium.Map(location=[-0.789275 , 113.921327], tiles="Cartodb dark_matter", zoom_start=4)
         heat_data = [[point.xy[1][0], point.xy[0][0]] for point in geo_df.geometry]
 
         plugins.HeatMap(heat_data).add_to(m)
