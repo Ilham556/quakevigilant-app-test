@@ -1346,6 +1346,7 @@ class AppView:
                     )
                     st.write('Register')
                     Confrimation()
+                    st.experimental_rerun()
                     
                 prev = st.form_submit_button("Prev")
                 if prev:
