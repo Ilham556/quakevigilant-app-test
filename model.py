@@ -1,24 +1,11 @@
 # model.py
 import requests
 import streamlit as st
-import hydralit_components as hc
-from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode, AgGridTheme
 import pandas as pd
-from pandas.api.types import is_bool_dtype, is_numeric_dtype
 import mysql.connector
 import datetime
 from datetime import date, timedelta
-import numpy as np
-from streamlit_option_menu import option_menu
-import altair as alt
 import requests
-import geopandas
-from folium.plugins import MarkerCluster
-from folium.plugins import HeatMap
-from folium import plugins
-import folium
-from streamlit_folium import st_folium
-from streamlit_folium import folium_static
 from datetime import datetime as dt
 import pathlib
 import json
@@ -100,6 +87,7 @@ JOIN users ON artikel.penulis = users.id;"""
         return df
 
     def processing_df_heatmap(self,df):
+        df.drop(df[(df['magnitudo'] == 0) | (df['significance'] == 0) | (df['depth'] == 0)].index, inplace=True)
         df['date'] = pd.to_datetime(df['date'])
         df['times'] = df['date'].dt.time
         bantu = pd.to_datetime(df['times'], format='%H:%M:%S')
@@ -129,6 +117,7 @@ JOIN users ON artikel.penulis = users.id;"""
         
         df['season'] = df['month'].apply(lambda x:'dry season' if (x>3)&(x<11) else 'rainy season')
         df['depth category'] = df['depth'].apply(lambda x:'shallow' if x < 60 else 'intermediate' if x < 300 else 'deep')
+        
 
         return df
     
